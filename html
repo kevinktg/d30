@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Chimera: D3O Market Disruption Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A thematic, non-linear dashboard structure. The user starts with a high-level summary (The Thesis) and can navigate via a persistent header to deep-dive sections: Technology, Market Landscape, The Core Opportunity, and Strategic Scenarios. This structure prioritizes user-led exploration over a rigid, linear report format, allowing a busy executive to jump directly to areas of interest. Key interactions involve toggling data on charts and switching between comparative views to make complex data easily digestible. -->
+    <!-- Visualization & Content Choices: 
+        - Thesis KPIs: Goal=Inform. Method=Large stat cards. Interaction=None. Justification=Immediate high-impact data.
+        - D3O Tech Comparison: Goal=Compare. Method=Bar Chart (Chart.js). Interaction=Buttons to switch between D3O variants. Justification=Clearly visualizes the performance trade-offs between protection and flexibility.
+        - Competitive Matrix: Goal=Analyze. Method=Radar Chart (Chart.js). Interaction=Buttons to select competitor. Justification=Provides a powerful multi-axis visual comparison of D3O's advantages.
+        - Iron Triangle: Goal=Organize/Persuade. Method=HTML/CSS Diagram. Interaction=Click to "break" the triangle. Justification=Memorable visualization of the core market failure and D3O's unique solution.
+        - GTM Strategies: Goal=Compare. Method=Tabbed Interface. Interaction=Clicking tabs. Justification=Standard, clean UI for presenting distinct options.
+        - Roadmap: Goal=Inform. Method=HTML/CSS Timeline. Interaction=Hover effects. Justification=Intuitive for chronological data.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F5F5F4; /* stone-100 */
+            color: #44403C; /* stone-700 */
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link.active {
+            border-bottom-color: #F97316; /* orange-500 */
+            color: #F97316;
+        }
+        .nav-link:hover {
+            color: #F97316;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .tab-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-button.active {
+            background-color: #F97316;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .triangle-container {
+            position: relative;
+            width: 300px;
+            height: 260px;
+            margin: 2rem auto;
+        }
+        .triangle-point {
+            position: absolute;
+            width: 120px;
+            text-align: center;
+        }
+        .point-1 { top: 0; left: 50%; transform: translateX(-50%); }
+        .point-2 { bottom: 0; left: 0; }
+        .point-3 { bottom: 0; right: 0; }
+        .triangle-lines {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .triangle-lines canvas {
+            width: 100%;
+            height: 100%;
+        }
+        .d3o-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .triangle-container.solved .d3o-center {
+            opacity: 1;
+        }
+        .triangle-container.solved .triangle-lines {
+            opacity: 0.2;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-stone-800">Project Chimera</span>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#" data-section="thesis" class="nav-link active px-3 py-2 rounded-md text-sm font-medium text-stone-700">The Thesis</a>
+                        <a href="#" data-section="technology" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">The D3O Advantage</a>
+                        <a href="#" data-section="market" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Market Landscape</a>
+                        <a href="#" data-section="opportunity" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">The Core Opportunity</a>
+                        <a href="#" data-section="strategy" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Strategic Scenarios</a>
+                        <a href="#" data-section="roadmap" class="nav-link px-3 py-2 rounded-md text-sm font-medium text-stone-700">Future Roadmap</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+
+        <!-- Section 1: The Thesis -->
+        <section id="thesis" class="content-section active">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold tracking-tight text-stone-800 sm:text-5xl">A New Paradigm in Player Protection</h1>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">D3O's non-Newtonian technology is not an incremental upgrade; it is a fundamental disruption capable of solving the catcher's most critical, unaddressed pain points and capturing a high-value, influential market segment.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-5xl font-bold text-orange-500">>50%</h3>
+                    <p class="mt-2 text-sm font-semibold text-stone-800">Potential Peak Force Reduction</p>
+                    <p class="mt-2 text-sm text-stone-600">Leveraging CE Level 2 certified materials to drastically reduce transmitted impact from high-velocity pitches, directly addressing chronic injury risk.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-5xl font-bold text-orange-500">$50-75M</h3>
+                    <p class="mt-2 text-sm font-semibold text-stone-800">Annual TAM (Premium Segment)</p>
+                    <p class="mt-2 text-sm text-stone-600">Targeting the influential professional and high-amateur market to create a powerful halo effect across all consumer levels.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-5xl font-bold text-orange-500">>3x</h3>
+                    <p class="mt-2 text-sm font-semibold text-stone-800">Superior Dampening Ratio</p>
+                    <p class="mt-2 text-sm text-stone-600">Scientifically validated ability to "deaden" the ball, minimizing rebound for improved framing and reduced passed balls.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: The D3O Advantage -->
+        <section id="technology" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-800">Quantifying the Non-Newtonian Advantage</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">D3O's portfolio of rate-sensitive materials enables a tiered product strategy that can be precisely tailored to different segments of the elite catcher market. This section allows you to explore the trade-offs between maximum protection and ultimate flexibility within our core technology offerings.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="btn-lp2" class="tech-button bg-orange-500 text-white px-4 py-2 rounded-md text-sm font-medium">LP2 Pro (Max Protection)</button>
+                    <button id="btn-lp1" class="tech-button bg-stone-200 text-stone-700 px-4 py-2 rounded-md text-sm font-medium">LP1 (Balanced)</button>
+                    <button id="btn-ghost" class="tech-button bg-stone-200 text-stone-700 px-4 py-2 rounded-md text-sm font-medium">Ghost™ (Max Feel)</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 id="tech-title" class="text-2xl font-bold text-stone-800 mb-2">D3O® LP2 Pro</h3>
+                        <p id="tech-description" class="text-stone-600">The pinnacle of D3O's protection, certified to the highest CE Level 2 standard. Engineered for catchers facing elite velocity, its 15mm profile offers unparalleled impact attenuation to prevent long-term injury. TriVent technology ensures breathability during peak performance.</p>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="techChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Market Landscape -->
+        <section id="market" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-800">An Entrenched, Underserved Oligopoly</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">The high-performance catcher's mitt market is dominated by legacy brands relying on incremental improvements to conventional foam padding. Their technologies are not rate-sensitive, creating a significant performance gap that D3O can exploit. Select a competitor to see a direct comparison.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex justify-center flex-wrap gap-4 mb-6">
+                    <button data-competitor="rawlings" class="competitor-button bg-orange-500 text-white px-4 py-2 rounded-md text-sm font-medium">Rawlings</button>
+                    <button data-competitor="wilson" class="competitor-button bg-stone-200 text-stone-700 px-4 py-2 rounded-md text-sm font-medium">Wilson</button>
+                    <button data-competitor="allstar" class="competitor-button bg-stone-200 text-stone-700 px-4 py-2 rounded-md text-sm font-medium">All-Star</button>
+                    <button data-competitor="mizuno" class="competitor-button bg-stone-200 text-stone-700 px-4 py-2 rounded-md text-sm font-medium">Mizuno</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div class="chart-container">
+                        <canvas id="competitorChart"></canvas>
+                    </div>
+                    <div>
+                        <h3 id="competitor-title" class="text-2xl font-bold text-stone-800 mb-2">vs. Rawlings (PORON XRD)</h3>
+                        <p id="competitor-description" class="text-stone-600">Rawlings uses PORON XRD, a high-quality polyurethane foam. While effective at energy absorption, its performance is fixed and not adaptive to impact velocity. It is also susceptible to compression set over time, degrading protection. D3O's non-Newtonian technology provides a life-of-product advantage with superior, rate-sensitive protection.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: The Core Opportunity -->
+        <section id="opportunity" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-800">Breaking the "Iron Triangle"</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">Elite catchers are forced into a compromise. The market's "Iron Triangle" dictates they can choose any two of three key attributes, but never all three. D3O's technology shatters this paradigm, offering a solution with no compromises. Click the D3O logo to see how.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md flex flex-col lg:flex-row items-center justify-around">
+                <div id="triangle" class="triangle-container cursor-pointer">
+                    <div class="triangle-point point-1">
+                        <div class="font-bold text-stone-800">Max Protection & Durability</div>
+                        <div class="text-xs text-stone-500">(Stiff Leather)</div>
+                    </div>
+                    <div class="triangle-point point-2">
+                        <div class="font-bold text-stone-800">Game-Ready Feel</div>
+                        <div class="text-xs text-stone-500">(Soft Leather)</div>
+                    </div>
+                    <div class="triangle-point point-3">
+                        <div class="font-bold text-stone-800">Lightweight Agility</div>
+                        <div class="text-xs text-stone-500">(Thinner Profile)</div>
+                    </div>
+                    <div class="triangle-lines"><canvas id="triangle-canvas"></canvas></div>
+                    <div class="d3o-center">
+                        <div class="bg-orange-500 text-white rounded-full w-24 h-24 flex items-center justify-center font-bold text-2xl shadow-lg">D3O</div>
+                    </div>
+                </div>
+                 <div class="mt-8 lg:mt-0 lg:ml-8 max-w-md">
+                    <h3 class="text-2xl font-bold text-stone-800 mb-2">The No-Compromise Solution</h3>
+                    <p class="text-stone-600">Because D3O's protective capability is an intrinsic property of its material science—independent of the surrounding leather's stiffness—it is possible to engineer a mitt that delivers all three attributes simultaneously:
+                        <ul class="list-disc list-inside mt-4 space-y-2">
+                            <li><span class="font-semibold">Supremely Protective:</span> Leveraging superior, rate-sensitive impact attenuation.</li>
+                            <li><span class="font-semibold">Game-Ready:</span> Using pliable, premium leathers without compromising safety.</li>
+                            <li><span class="font-semibold">Lightweight & Agile:</span> A thinner, more efficient protective package reduces weight and improves hand speed.</li>
+                        </ul>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Strategic Scenarios -->
+        <section id="strategy" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-800">Audacious Go-To-Market Scenarios</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">A disruptive technology requires an equally unconventional go-to-market strategy. A conventional OEM partnership would fail to build brand value. These three brand-forward strategies are designed to bypass traditional channels and establish D3O as a dominant force.</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="border-b border-stone-200">
+                    <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                        <button data-tab="gtm1" class="tab-button active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">"Pro-Tour" Seeding</button>
+                        <button data-tab="gtm2" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">"Custom-Fit" Revolution</button>
+                        <button data-tab="gtm3" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">"Open-Source" Partnership</button>
+                    </nav>
+                </div>
+                <div class="mt-6">
+                    <div id="gtm1" class="tab-content active">
+                        <h3 class="text-xl font-bold text-stone-800">Guerrilla Marketing to Build Authenticity</h3>
+                        <p class="mt-2 text-stone-600">Execute a targeted seeding program to top NCAA and MiLB catchers. Provide unbranded or cryptically branded prototypes to generate organic, peer-to-peer buzz and pro-level validation before a formal launch. This creates authentic demand driven by the game's most influential rising stars.</p>
+                        <p class="mt-2 text-sm text-stone-500"><span class="font-semibold">Precedent:</span> Lululemon's "Sweat Collective" program, which turns fitness instructors into grassroots brand ambassadors.</p>
+                    </div>
+                    <div id="gtm2" class="tab-content">
+                        <h3 class="text-xl font-bold text-stone-800">Direct-to-Consumer Market Entry</h3>
+                        <p class="mt-2 text-stone-600">Launch a DTC platform selling custom-molded D3O palm inserts designed to upgrade existing high-end mitts from competitors. This low-risk approach bypasses retail, captures high margins, and builds a direct database of elite users, providing invaluable data for a future full-mitt launch.</p>
+                         <p class="mt-2 text-sm text-stone-500"><span class="font-semibold">Precedent:</span> Nike's aggressive and successful shift toward a DTC model to own the customer relationship and control brand narrative.</p>
+                    </div>
+                    <div id="gtm3" class="tab-content">
+                        <h3 class="text-xl font-bold text-stone-800">Co-Branded Disruption</h3>
+                        <p class="mt-2 text-stone-600">Form an exclusive partnership with an agile, innovative glove manufacturer like Marucci or 44 Pro Gloves. Launch a co-branded "Powered by D3O®" line, combining their craftsmanship with our technology to directly challenge incumbents as the forward-thinking choice for serious players.</p>
+                        <p class="mt-2 text-sm text-stone-500"><span class="font-semibold">Precedent:</span> Successful co-branding in the sports industry that leverages complementary brand equities to create a unique selling proposition.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Section 6: Future Roadmap -->
+        <section id="roadmap" class="content-section">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-stone-800">Sustaining Long-Term Advantage</h2>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-stone-600">Market entry is the first step. Long-term leadership will be maintained through a strategic product expansion and the integration of AI into design and market intelligence, creating a powerful, data-driven feedback loop.</p>
+            </div>
+            
+            <div class="mb-12">
+                <h3 class="text-2xl font-bold text-stone-800 text-center mb-8">3-Year Product Roadmap</h3>
+                <div class="relative">
+                    <div class="absolute left-1/2 h-full w-0.5 bg-stone-300"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8">
+                        <div class="text-right pr-8">
+                            <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+                                <h4 class="font-bold text-orange-500">Year 1: Market Entry & Validation</h4>
+                                <p class="text-sm text-stone-600">Launch initial catcher's mitt line ("Pro-Fortress" & "Pro-Agility") and execute "Pro-Tour Seeding" strategy.</p>
+                            </div>
+                        </div>
+                        <div></div>
+                        <div></div>
+                        <div class="text-left pl-8">
+                            <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+                                <h4 class="font-bold text-orange-500">Year 2: Product Line Expansion</h4>
+                                <p class="text-sm text-stone-600">Leverage brand equity to launch a full suite of D3O-Protected gear: chest protectors, shin guards, and batting helmet liners.</p>
+                            </div>
+                        </div>
+                        <div class="text-right pr-8">
+                             <div class="bg-white p-4 rounded-lg shadow-md mb-8">
+                                <h4 class="font-bold text-orange-500">Year 3: Mass Customization & DTC Scale-Up</h4>
+                                <p class="text-sm text-stone-600">Launch "D3O Pro Custom" platform for fully personalized gear, powered by user data and AI-driven design tools.</p>
+                            </div>
+                        </div>
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-2xl font-bold text-stone-800 text-center mb-8">AI Integration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h4 class="font-bold text-stone-800">AI-Powered Generative Design</h4>
+                        <p class="mt-2 text-stone-600">Implement a generative design workflow to create thousands of optimized D3O insert geometries. The AI will explore complex, organic structures to maximize force dissipation with minimal material, creating performance characteristics impossible for humans to conceive.</p>
+                        <p class="mt-2 text-sm text-stone-500"><span class="font-semibold">Precedent:</span> SRAM and Decathlon using this for high-performance bicycle components and diving fins.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h4 class="font-bold text-stone-800">Real-Time Market Intelligence</h4>
+                        <p class="mt-2 text-stone-600">Deploy an AI engine to continuously monitor online forums, social media, and reviews for the "Voice of the Catcher." NLP algorithms will identify emerging trends and pain points, enabling rapid product iteration and highly resonant marketing.</p>
+                        <p class="mt-2 text-sm text-stone-500"><span class="font-semibold">Precedent:</span> Widespread use in sports marketing for sentiment analysis and campaign optimization.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white mt-12">
+        <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 text-center text-sm text-stone-500">
+            <p>CONFIDENTIAL STRATEGIC ANALYSIS: D3O HOLDINGS LTD.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.content-section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', e => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('data-section');
+
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+
+                    sections.forEach(s => {
+                        s.classList.remove('active');
+                        if (s.id === sectionId) {
+                            s.classList.add('active');
+                        }
+                    });
+                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            });
+
+            const techButtons = document.querySelectorAll('.tech-button');
+            const techTitle = document.getElementById('tech-title');
+            const techDescription = document.getElementById('tech-description');
+            let techChart;
+
+            const techData = {
+                lp2: {
+                    title: 'D3O® LP2 Pro',
+                    description: "The pinnacle of D3O's protection, certified to the highest CE Level 2 standard. Engineered for catchers facing elite velocity, its 15mm profile offers unparalleled impact attenuation to prevent long-term injury. TriVent technology ensures breathability during peak performance.",
+                    values: [10, 3] 
+                },
+                lp1: {
+                    title: 'D3O® LP1',
+                    description: "The balanced performance option, certified to CE Level 1. At 11mm thick, it offers protection far superior to traditional foams in a thinner, more agile package that appeals to catchers who prioritize feel and hand speed without significant compromise.",
+                    values: [7, 6]
+                },
+                ghost: {
+                    title: 'D3O Ghost™',
+                    description: "The most revolutionary form factor at just 6.5mm thick. It utilizes 'Impact Print™' technology for an incredibly thin, flexible design. It provides CE Level 1 protection for players who demand the ultimate 'fit and forget' feel and freedom of movement.",
+                    values: [5, 10]
+                }
+            };
+
+            function createTechChart(data) {
+                const ctx = document.getElementById('techChart').getContext('2d');
+                if (techChart) {
+                    techChart.destroy();
+                }
+                techChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Impact Protection', 'Flexibility / Feel'],
+                        datasets: [{
+                            label: 'Performance Rating',
+                            data: data,
+                            backgroundColor: ['#F97316', '#FB923C'],
+                            borderColor: ['#EA580C', '#F97316'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 10,
+                                grid: { display: false }
+                            },
+                            y: {
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+            }
+
+            techButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    techButtons.forEach(btn => {
+                        btn.classList.remove('bg-orange-500', 'text-white');
+                        btn.classList.add('bg-stone-200', 'text-stone-700');
+                    });
+                    button.classList.add('bg-orange-500', 'text-white');
+                    button.classList.remove('bg-stone-200', 'text-stone-700');
+                    
+                    const techId = button.id.split('-')[1];
+                    techTitle.textContent = techData[techId].title;
+                    techDescription.textContent = techData[techId].description;
+                    createTechChart(techData[techId].values);
+                });
+            });
+
+            createTechChart(techData.lp2.values);
+
+            const competitorButtons = document.querySelectorAll('.competitor-button');
+            const competitorTitle = document.getElementById('competitor-title');
+            const competitorDescription = document.getElementById('competitor-description');
+            let competitorChart;
+            
+            const competitorData = {
+                d3o: [9, 9, 8, 10, 7],
+                rawlings: {
+                    name: 'vs. Rawlings (PORON XRD)',
+                    description: "Rawlings uses PORON XRD, a high-quality polyurethane foam. While effective at energy absorption, its performance is fixed and not adaptive to impact velocity. It is also susceptible to compression set over time, degrading protection. D3O's non-Newtonian technology provides a life-of-product advantage with superior, rate-sensitive protection.",
+                    values: [7, 5, 6, 4, 8]
+                },
+                wilson: {
+                    name: 'vs. Wilson (Double Palm)',
+                    description: "Wilson prioritizes pocket stability and 'feel' with a structural leather reinforcement. This offers only indirect impact absorption, creating a significant vulnerability against D3O's dedicated, advanced material science focused on primary energy dissipation.",
+                    values: [5, 4, 8, 5, 9]
+                },
+                allstar: {
+                    name: 'vs. All-Star (Pro Guard Padding)',
+                    description: "All-Star uses a proprietary multi-density foam composite. Like other conventional foams, it lacks the adaptive, rate-sensitive properties of D3O, providing a fixed level of protection that is less efficient at handling the variable impact forces of elite-level play.",
+                    values: [6, 5, 6, 3, 8]
+                },
+                mizuno: {
+                    name: 'vs. Mizuno (ParaShock Pad)',
+                    description: "Mizuno's foam pad explicitly targets rebound reduction. However, its damping mechanism is less efficient than D3O's molecular energy dissipation, which has a scientifically validated higher dampening ratio for a superior 'deaden-ball' effect.",
+                    values: [6, 6, 7, 5, 7]
+                }
+            };
+
+            function createCompetitorChart(data) {
+                const ctx = document.getElementById('competitorChart').getContext('2d');
+                if (competitorChart) {
+                    competitorChart.destroy();
+                }
+                competitorChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Impact Absorption', 'Dampening', 'Lightweight', 'Game-Ready', 'Durability'],
+                        datasets: [
+                            {
+                                label: 'D3O',
+                                data: competitorData.d3o,
+                                backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                                borderColor: '#F97316',
+                                pointBackgroundColor: '#F97316'
+                            },
+                            {
+                                label: data.name.split(' ')[1],
+                                data: data.values,
+                                backgroundColor: 'rgba(120, 113, 108, 0.2)',
+                                borderColor: '#78716C',
+                                pointBackgroundColor: '#78716C'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                beginAtZero: true,
+                                max: 10,
+                                pointLabels: { font: { size: 10 } },
+                                ticks: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'top' }
+                        }
+                    }
+                });
+            }
+            
+            competitorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    competitorButtons.forEach(btn => {
+                        btn.classList.remove('bg-orange-500', 'text-white');
+                        btn.classList.add('bg-stone-200', 'text-stone-700');
+                    });
+                    button.classList.add('bg-orange-500', 'text-white');
+                    button.classList.remove('bg-stone-200', 'text-stone-700');
+                    
+                    const competitorId = button.dataset.competitor;
+                    const data = competitorData[competitorId];
+                    competitorTitle.textContent = data.name;
+                    competitorDescription.textContent = data.description;
+                    createCompetitorChart(data);
+                });
+            });
+
+            createCompetitorChart(competitorData.rawlings);
+
+            const triangleContainer = document.getElementById('triangle');
+            triangleContainer.addEventListener('click', () => {
+                triangleContainer.classList.toggle('solved');
+            });
+
+            const triangleCanvas = document.getElementById('triangle-canvas').getContext('2d');
+            function drawTriangle() {
+                const canvas = triangleCanvas.canvas;
+                const w = canvas.width;
+                const h = canvas.height;
+                triangleCanvas.strokeStyle = '#D6D3D1'; // stone-300
+                triangleCanvas.lineWidth = 2;
+                triangleCanvas.beginPath();
+                triangleCanvas.moveTo(w / 2, 20);
+                triangleCanvas.lineTo(20, h - 20);
+                triangleCanvas.lineTo(w - 20, h - 20);
+                triangleCanvas.closePath();
+                triangleCanvas.stroke();
+            }
+            drawTriangle();
+
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.dataset.tab;
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if(content.id === tabId) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
